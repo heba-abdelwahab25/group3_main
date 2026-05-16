@@ -1,0 +1,10 @@
+Flask>=2.3.3
+Flask-SQLAlchemy>=3.0.3
+Flask-Login>=0.6.3
+Flask-WTF>=1.1.1
+pycryptodome>=3.19.0
+argon2-cffi>=23.1.0
+python-dotenv>=1.0.0
+requests>=2.31.0
+# PQC libraries (same as proxy)
+kyber-py>=0.1.0

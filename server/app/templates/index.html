@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>🛍️ Products</h1>
+<ul id="product-list">
+  {% for p in products %}
+    <li>
+      <strong>{{ p.name|e }}</strong>
+      <span>{{ p.description|e }}</span>
+      <div class="price">${{ '%.2f' % (p.price_cents/100.0) }}</div>
+      {% if current_user.is_authenticated %}
+        <button onclick="purchase({{ p.id }})">🛒 Buy Now</button>
+      {% else %}
+        <p style="color: var(--text-secondary); font-size: 0.875rem; margin-top: 0.75rem;">
+          <a href="{{ url_for('auth.login') }}" style="color: var(--primary-color); text-decoration: none;">Login</a> to purchase
+        </p>
+      {% endif %}
+    </li>
+  {% endfor %}
+</ul>
+{% endblock %}

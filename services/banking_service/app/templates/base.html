@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}SecureBank Service{% endblock %}</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+  <style>
+    body { background: #f0f4f8; }
+    .navbar { background: #1a3c5e !important; }
+    .navbar-brand { color: #fff !important; font-weight: 700; letter-spacing: 1px; }
+    .navbar-text { color: #aad4f5 !important; font-size: .85rem; }
+    .card { border: none; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+    .badge-pqc { background: #0d6efd; font-size:.7rem; vertical-align: middle; }
+    .crypto-badge { font-family: monospace; font-size: .78rem; background: #e7f3ff; 
+                    color: #0a58ca; border-radius: 4px; padding: 2px 6px; }
+  </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark">
+  <div class="container">
+    <a class="navbar-brand" href="{{ url_for('main.dashboard') }}">🔐 SecureBank Service</a>
+    <span class="navbar-text ms-auto me-3">
+      <span class="crypto-badge">{{ config.get('BANKING_CRYPTO_ALG', 'Kyber-ML_KEM_768+AES-256-GCM') }}</span>
+    </span>
+    {% if current_user.is_authenticated %}
+    <span class="navbar-text me-3 text-white">{{ current_user.username }}</span>
+    <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-outline-light">Logout</a>
+    {% endif %}
+  </div>
+</nav>
+<div class="container py-4">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+      <div class="alert alert-{{ cat }} alert-dismissible fade show" role="alert">
+        {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

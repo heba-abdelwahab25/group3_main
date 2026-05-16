@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Transfer — SecureBank PQC{% endblock %}
+{% block content %}
+<h4>Secure Transfer</h4>
+<div class="card" style="max-width:420px">
+  <div class="card-body">
+    <form method="post">
+      <div class="mb-3">
+        <label class="form-label">From Account</label>
+        <select name="from_account" class="form-select" required>
+          {% for a in accounts %}<option value="{{ a.id }}">{{ a.label }} (${{ "%.2f"|format(a.balance/100) }})</option>{% endfor %}
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">To Account</label>
+        <select name="to_account" class="form-select" required>
+          {% for a in accounts %}<option value="{{ a.id }}">{{ a.label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Amount ($)</label>
+        <input name="amount" type="number" step="0.01" min="0.01" class="form-control" required>
+      </div>
+      <button class="btn btn-primary w-100">🔐 Transfer Securely</button>
+    </form>
+  </div>
+</div>
+<a href="{{ url_for('main.dashboard') }}" class="btn btn-sm btn-outline-secondary mt-2">← Back</a>
+{% endblock %}

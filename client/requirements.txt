@@ -1,0 +1,13 @@
+# Post-Quantum Cryptography options (install at least one):
+# Recommended: kyber-py (most compatible)
+kyber-py>=0.1.0
+# Alternative PQC libraries:
+# pqcrypto>=0.1.0
+# smaj-kyber>=0.1.0
+# kybercffi>=0.1.0
+
+# RSA cryptography options (install at least one):
+pycryptodome>=3.15.0
+# Alternative RSA library:
+# cryptography>=3.4.0
+

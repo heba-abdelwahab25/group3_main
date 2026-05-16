@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Observer Login</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="app-shell" style="grid-template-columns: 1fr; grid-template-areas: 'topbar' 'main' 'footer';">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo"><img class="logo-img" src="{{ url_for('static', filename='proxera-logo.jpeg') }}" alt="PROXERA" /></div>
+        <div>
+          <div class="brand-title">Observer Dashboard</div>
+          <div class="brand-sub muted">Sign in to continue</div>
+        </div>
+      </div>
+    </header>
+
+    <main class="main">
+      <div class="card" style="max-width: 460px; margin: 3rem auto;">
+        <div class="card-header">
+          <div>
+            <p class="label">Login</p>
+            <p class="muted">Use your admin credentials.</p>
+          </div>
+        </div>
+
+        {% if error %}
+          <div class="badge error" style="margin-bottom: 0.75rem;">{{ error }}</div>
+        {% endif %}
+
+        <form method="post" action="{{ url_for('observer.login') }}">
+          <div style="display:flex; flex-direction:column; gap:0.75rem;">
+            <label>
+              <div class="label" style="margin-bottom:0.35rem;">Username</div>
+              <input name="username" type="text" autocomplete="username" required style="width:100%; padding:0.65rem 0.8rem; border-radius:0.75rem; border:1px solid rgba(148, 163, 184, 0.25); background: rgba(2,6,23,0.35); color:#e2e8f0;" />
+            </label>
+
+            <label>
+              <div class="label" style="margin-bottom:0.35rem;">Password</div>
+              <input name="password" type="password" autocomplete="current-password" required style="width:100%; padding:0.65rem 0.8rem; border-radius:0.75rem; border:1px solid rgba(148, 163, 184, 0.25); background: rgba(2,6,23,0.35); color:#e2e8f0;" />
+            </label>
+
+            <button type="submit">Sign in</button>
+          </div>
+        </form>
+
+        <p class="muted" style="margin-top:1rem;">
+          Default credentials (dev):
+          <code>admin / admin</code>
+        </p>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="muted">Version: dev</div>
+      <div class="muted">Security Status: login required</div>
+    </footer>
+  </div>
+</body>
+</html>

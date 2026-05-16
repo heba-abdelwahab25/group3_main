@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="form-container">
+  <h2>📝 Register</h2>
+  <form method="post">
+    {{ form.hidden_tag() }}
+    <div class="form-group">
+      <label for="username">Username</label>
+      {{ form.username(class="form-input") }}
+    </div>
+    <div class="form-group">
+      <label for="password">Password</label>
+      {{ form.password(class="form-input") }}
+      <small style="color: var(--text-secondary); font-size: 0.75rem; margin-top: 0.25rem;">
+        Must be at least 8 characters long
+      </small>
+    </div>
+    <button type="submit">Create Account</button>
+    <p style="text-align: center; margin-top: 1rem; color: var(--text-secondary); font-size: 0.875rem;">
+      Already have an account? <a href="{{ url_for('auth.login') }}" style="color: var(--primary-color); text-decoration: none; font-weight: 600;">Login here</a>
+    </p>
+  </form>
+</div>
+{% endblock %}

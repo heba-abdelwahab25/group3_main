@@ -1,0 +1,21 @@
+[Unit]
+Description=PQ/TLS proxy
+After=network-online.target vault-agent-proxy.service
+Wants=vault-agent-proxy.service
+
+[Service]
+User=proxy-user
+Group=proxy-user
+EnvironmentFile=/etc/proxy.env
+WorkingDirectory=/opt/proxy
+ExecStart=/usr/bin/python /opt/proxy/proxy.py
+ExecReload=/bin/kill -s SIGHUP $MAINPID
+Restart=on-failure
+RuntimeDirectory=proxy
+RuntimeDirectoryMode=0750
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
+
+

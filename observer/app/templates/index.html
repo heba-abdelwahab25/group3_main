@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Proxy Observer Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='2') }}">
+  <script src="{{ url_for('static', filename='js/chart.min.js') }}"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo"><img class="logo-img" src="{{ url_for('static', filename='proxera-logo.jpeg') }}" alt="PROXERA" /></div>
+        <div>
+          <div class="brand-title">Observer Dashboard</div>
+          <div class="brand-sub muted">Real-time proxy analytics</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="top-meta">
+          <div class="meta-title">{{ current_user.username }}</div>
+          <div class="muted" id="user-role">{{ current_user.role }}</div>
+        </div>
+        <div class="notif">
+          <span class="badge info" id="notif-count">0</span>
+          <span class="muted">Notifications</span>
+        </div>
+        <form method="post" action="{{ url_for('observer.logout') }}" style="margin:0;">
+          <button type="submit">Logout</button>
+        </form>
+      </div>
+    </header>
+
+    <aside class="sidebar">
+      <nav class="nav">
+        <a class="nav-item active" href="#" data-tab="performance" data-min-role="viewer">Performance</a>
+        <a class="nav-item" href="#" data-tab="security" data-min-role="viewer">SIEM</a>
+        <a class="nav-item" href="#" data-tab="history" data-min-role="auditor">Historical Analytics</a>
+        <a class="nav-item" href="#" data-tab="pcap" data-min-role="auditor">PCAP</a>
+        <a class="nav-item" href="#" data-tab="sessions" data-min-role="viewer">Sessions</a>
+        <a class="nav-item" href="#" data-tab="config" data-min-role="admin">Config</a>
+        <a class="nav-item" href="#" data-tab="logs" data-min-role="auditor">CBOM</a>
+      </nav>
+      <div class="sidebar-footer muted">
+        <div>Dashboard</div>
+        <div id="dash-last-updated">Syncing...</div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <section id="telemetry-dashboard" class="panel active" data-panel="performance">
+        <div class="panel-header">
+          <div>
+            <h1>Traffic Overview</h1>
+            <p class="muted">Real-time requests/responses, throughput, and client activity.</p>
+          </div>
+          <div class="panel-actions">
+            <button id="dash-refresh" type="button">Refresh</button>
+            <button id="toggle-stream" type="button">Pause Live</button>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <p class="label">Requests (window)</p>
+                <h2 id="traffic-total">0</h2>
+                <p class="muted"><span id="traffic-window">--</span> second window</p>
+              </div>
+              <div class="stat-right">
+                <div class="pill">Active sessions: <span id="traffic-sessions">0</span></div>
+              </div>
+            </div>
+            <div class="pill-stack" id="stat-by-component"></div>
+            <p class="muted" style="margin-top:0.75rem;">Source: <span id="traffic-source">—</span></p>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <p class="label">Throughput (approx)</p>
+                <p class="muted">Events per minute timeline</p>
+              </div>
+            </div>
+            <div id="timeline" class="timeline"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <p class="label">By Event Type</p>
+                <p class="muted">Rolling window</p>
+              </div>
+            </div>
+            <div id="stat-by-type" class="pill-stack"></div>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <p class="label">Crypto Health</p>
+                <p class="muted">PQC vs RSA handshake stats</p>
+              </div>
+            </div>
+            <div class="pill-stack" id="crypto-algos"></div>
+            <p class="muted" style="margin-top:0.75rem;">Active sessions: <span id="crypto-active">0</span></p>
+            <p class="muted" style="margin-top:0.75rem;">Failures: <span id="crypto-failures">0</span></p>
+            <p class="muted" style="margin-top:0.75rem;">Source: <span id="crypto-source">—</span></p>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <p class="label">Latency Analysis</p>
+                <p class="muted">Aggregated message forwarding latency</p>
+              </div>
+            </div>
+            <div class="pill-stack">
+              <span class="pill">Avg: <span id="latency-avg">—</span> ms</span>
+              <span class="pill">Min: <span id="latency-min">—</span> ms</span>
+              <span class="pill">Max: <span id="latency-max">—</span> ms</span>
+              <span class="pill">Samples: <span id="latency-count">0</span></span>
+            </div>
+            <p class="muted" style="margin-top:0.75rem;">Source: <span id="latency-source">—</span></p>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <p class="label">Alerts &amp; Notifications</p>
+                <p class="muted">Anomaly alerts</p>
+              </div>
+            </div>
+            <div class="pill" style="width:100%; border-radius:0.75rem; padding:0.75rem; margin-bottom:0.75rem;">
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem;">
+                <div>
+                  <div class="label">Predictive Alerts</div>
+                  <div class="muted">Forecasted risk (EWMA + trend)</div>
+                </div>
+                <span class="muted" id="predict-updated">—</span>
+              </div>
+              <div class="pill-stack" style="margin-top:0.75rem;">
+                <span class="pill">Handshake risk: <span id="predict-risk-handshake">—</span></span>
+                <span class="pill">Overload risk: <span id="predict-risk-overload">—</span></span>
+              </div>
+              <canvas id="predict-chart" class="chart" height="120" style="margin-top:0.75rem;"></canvas>
+            </div>
+            <div id="alerts" class="pill-stack"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <p class="label">Recent Events</p>
+              <p class="muted">Latest activity from proxy, server, and clients.</p>
+            </div>
+          </div>
+          <div class="pill-stack" style="margin-bottom:0.75rem;">
+            <span class="pill">Algorithm
+              <select id="filter-algorithm" style="margin-left:0.5rem; background:transparent; color:inherit; border:0;">
+                <option value="">All</option>
+                <option value="kyber">Kyber</option>
+                <option value="rsa">RSA</option>
+              </select>
+            </span>
+            <span class="pill">Client
+              <input id="filter-client" type="text" placeholder="id" style="margin-left:0.5rem; width:6rem; background:transparent; color:inherit; border:0;" />
+            </span>
+            <span class="pill">Path
+              <input id="filter-path" type="text" placeholder="/api" style="margin-left:0.5rem; width:10rem; background:transparent; color:inherit; border:0;" />
+            </span>
+            <button id="filter-clear" type="button">Clear</button>
+          </div>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>When</th>
+                  <th>Component</th>
+                  <th>Type</th>
+                  <th>Session</th>
+                  <th>Client</th>
+                  <th>Details</th>
+                </tr>
+              </thead>
+              <tbody id="recent-events-body">
+                <tr><td colspan="6" class="muted">Waiting for data...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" data-panel="security" data-min-role="auditor">
+        <div class="panel-header">
+          <div>
+            <h1>SIEM Analytics</h1>
+            <p class="muted">Security insights and crypto exposure visualization</p>
+          </div>
+          <div class="panel-actions">
+            <button id="siem-refresh" type="button" title="Refresh data" onclick="refreshSiemPanel()">
+              <i class="icon-refresh"></i> Refresh
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3>Security Summary</h3>
+            <p class="muted">Last <span id="siem-window-mins">60</span> minutes</p>
+          </div>
+          <div class="grid-3">
+            <div class="metric-card">
+              <div class="metric-value" id="siem-total">0</div>
+              <div class="metric-label">Total Events</div>
+            </div>
+            <div class="metric-card critical">
+              <div class="metric-value" id="siem-critical">0</div>
+              <div class="metric-label">Critical</div>
+            </div>
+            <div class="metric-card warning">
+              <div class="metric-value" id="siem-harvestable">0</div>
+              <div class="metric-label">Harvestable</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="card">
+            <div class="card-header">
+              <h3>Crypto Algorithm Distribution</h3>
+              <p class="muted">By usage in observed connections</p>
+            </div>
+            <div class="chart-container">
+              <canvas id="crypto-pie-chart"></canvas>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3>Security Events by Type</h3>
+              <p class="muted">Distribution of event severities</p>
+            </div>
+            <div class="chart-container">
+              <canvas id="severity-pie-chart"></canvas>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3>Post-Quantum Readiness</h3>
+              <p class="muted">PQC vs Classical algorithms</p>
+            </div>
+            <div class="chart-container">
+              <canvas id="pqc-pie-chart"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" data-panel="logs" data-min-role="auditor">
+        <div class="panel-header">
+          <div>
+            <h1>CBOM</h1>
+            <p class="muted">Communication events, crypto metadata, and action suggestions.</p>
+          </div>
+          <div class="panel-actions">
+            <button id="cbom-refresh" type="button">Refresh</button>
+            <button id="cbom-toggle-group" type="button" disabled>Aggregated</button>
+            <button id="cbom-purge" type="button" data-min-role="admin">Delete History</button>
+            <button id="cbom-compact" type="button">Compact</button>
+            <button id="cbom-prev" type="button">Prev</button>
+            <button id="cbom-next" type="button">Next</button>
+            <span class="muted" id="cbom-page">Page 1</span>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:1rem;">
+          <div class="card-header">
+            <div>
+              <p class="label">Ecosystem Components</p>
+              <p class="muted">Expected vs seen in current CBOM window</p>
+            </div>
+          </div>
+          <div class="pill-stack" id="cbom-components"></div>
+          <div class="table-wrapper" style="margin-top: 1rem;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Component</th>
+                  <th>Cryptographic Algorithm</th>
+                  <th>Library/Tool Used</th>
+                  <th>Key Length</th>
+                  <th>Cert Type</th>
+                  <th>Protocol</th>
+                  <th>PQC Readiness</th>
+                </tr>
+              </thead>
+              <tbody id="cbom-component-details-body">
+                <tr><td colspan="7" class="muted">Waiting for data...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="card cbom-card">
+            <div class="card-header">
+              <div>
+                <p class="label">CBOM Events &amp; Hardening Actions</p>
+                <p class="muted">Suggestions are summarized at the top of the table.</p>
+              </div>
+            </div>
+            <div class="table-wrapper cbom-table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>When</th>
+                    <th>Source</th>
+                    <th>Dest</th>
+                    <th>Proto</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Crypto</th>
+                    <th>Key Length</th>
+                    <th>Library/Tool</th>
+                    <th>Cert Type</th>
+                    <th>PQC Ready</th>
+                    <th>Latency</th>
+                    <th>Suggestion</th>
+                    <th>Analyze</th>
+                  </tr>
+                </thead>
+                <tbody id="cbom-events-body">
+                  <tr><td colspan="14" class="muted">No CBOM data loaded.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" data-panel="pcap" data-min-role="auditor">
+        <div class="panel-header">
+          <div>
+            <h1>PCAP</h1>
+            <p class="muted">Capture download, upload analysis, and Wireshark-like traffic graphs.</p>
+          </div>
+          <div class="panel-actions">
+            <button id="pcap-refresh" type="button">Refresh</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:center;">
+            <a id="pcap-download" class="button" href="/api/proxy/pcap/download">Download capture</a>
+            <span id="pcap-download-meta" class="muted">Checking capture...</span>
+            <span class="muted" id="pcap-analyze-meta"></span>
+          </div>
+          <form id="pcap-form" style="margin-top:0.75rem;">
+            <input type="file" id="pcap-file" accept=".pcap" />
+            <button type="submit">Upload &amp; Analyze</button>
+          </form>
+        </div>
+
+        <div class="grid" style="margin-top:1rem;">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <p class="label">Packets / sec</p>
+                <p class="muted">From capture timestamps</p>
+              </div>
+            </div>
+            <canvas id="pcap-chart-pkts" class="chart" height="140"></canvas>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <p class="label">Bytes / sec</p>
+                <p class="muted">From capture timestamps</p>
+              </div>
+            </div>
+            <canvas id="pcap-chart-bytes" class="chart" height="140"></canvas>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <p class="label">Protocol breakdown</p>
+                <p class="muted">Top protocols in window</p>
+              </div>
+            </div>
+            <div id="pcap-protos" class="pill-stack"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:1rem;">
+          <div class="card-header">
+            <div>
+              <p class="label">Top flows</p>
+              <p class="muted">Aggregated by 5-tuple (top 200)</p>
+            </div>
+          </div>
+          <div id="pcap-result" class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Src</th><th>Dst</th><th>Sport</th><th>Dport</th><th>Proto</th><th>Pkts</th><th>Bytes</th>
+                </tr>
+              </thead>
+              <tbody id="pcap-body">
+                <tr><td colspan="7" class="muted">No pcap uploaded.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" data-panel="sessions">
+        <div class="panel-header">
+          <div>
+            <h1>Sessions</h1>
+            <p class="muted">Active sessions list (anonymized) and stats.</p>
+          </div>
+        </div>
+        <div class="pill-stack" style="margin-bottom:0.75rem;">
+          <span class="pill">Algorithm
+            <select id="sessions-filter-algorithm" style="margin-left:0.5rem; background:transparent; color:inherit; border:0;">
+              <option value="">All</option>
+              <option value="kyber">Kyber</option>
+              <option value="rsa">RSA</option>
+            </select>
+          </span>
+          <span class="pill">Client
+            <input id="sessions-filter-client" type="text" placeholder="id" style="margin-left:0.5rem; width:6rem; background:transparent; color:inherit; border:0;" />
+          </span>
+          <button id="sessions-filter-clear" type="button">Clear</button>
+        </div>
+        <div class="card">
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Session</th>
+                  <th>First Seen</th>
+                  <th>Last Seen</th>
+                  <th>Events</th>
+                </tr>
+              </thead>
+              <tbody id="sessions-body">
+                <tr><td colspan="4" class="muted">Waiting for data...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" data-panel="history">
+        <div class="panel-header">
+          <div>
+            <h1>Historical Analytics</h1>
+            <p class="muted">Per-minute aggregates from MetricBucket (fast, privacy-safe).</p>
+          </div>
+          <div class="panel-actions">
+            <button id="history-refresh" type="button">Refresh</button>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <p class="label">Requests / minute</p>
+                <p class="muted">Last 120 minutes</p>
+              </div>
+            </div>
+            <canvas id="chart-requests" class="chart" height="140"></canvas>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <p class="label">Latency avg (ms)</p>
+                <p class="muted">Forwarding latency trend</p>
+              </div>
+            </div>
+            <canvas id="chart-latency" class="chart" height="140"></canvas>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <p class="label">Handshake failures / minute</p>
+                <p class="muted">Errors and handshake failures</p>
+              </div>
+            </div>
+            <canvas id="chart-failures" class="chart" height="140"></canvas>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <p class="label">Handshake Algorithms (window)</p>
+              <p class="muted">Aggregated counts</p>
+            </div>
+          </div>
+          <div id="history-algos" class="pill-stack"></div>
+          <p class="muted" style="margin-top:0.75rem;">Updated: <span id="history-updated">—</span></p>
+        </div>
+      </section>
+
+      <section class="panel" data-panel="config" data-min-role="admin">
+        <div class="panel-header">
+          <div>
+            <h1>Config</h1>
+            <p class="muted">Deployment configuration and policy snapshot.</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h3><span class="config-icon" aria-hidden="true">⚙</span> Deployment Configuration</h3>
+            </div>
+          </div>
+
+          <div class="config-kv-grid">
+            <div class="config-kv">
+              <div class="label">Multi-instance</div>
+              <div class="config-value" id="config-multi">—</div>
+            </div>
+            <div class="config-kv">
+              <div class="label">Crypto Policy</div>
+              <div class="config-value" id="config-crypto">—</div>
+            </div>
+            <div class="config-kv">
+              <div class="label">Rate Limit</div>
+              <div class="config-value" id="config-rate">—</div>
+            </div>
+            <div class="config-kv">
+              <div class="label">Whitelist</div>
+              <div class="config-value" id="config-whitelist">—</div>
+            </div>
+            <div class="config-kv">
+              <div class="label">Last Updated</div>
+              <div class="config-value" id="config-updated">—</div>
+            </div>
+          </div>
+
+          <div class="panel-actions" style="margin-top: 1rem;">
+            <button id="config-refresh" type="button">Refresh</button>
+            <button id="config-edit" type="button">Edit Policies</button>
+            <button id="config-copy" type="button">Copy Snapshot</button>
+          </div>
+
+          <button id="config-toggle-raw" class="config-toggle" type="button" style="margin-top: 1rem;">Show Raw JSON ▼</button>
+          <div id="config-raw" style="display:none; margin-top: 0.75rem;">
+            <pre id="config-json" class="code-block">Loading...</pre>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="muted">Version: <span id="footer-version">dev</span></div>
+      <div class="muted">Last Event: <span id="footer-last">—</span></div>
+      <div class="muted">Security Status: <span id="footer-security">—</span></div>
+    </footer>
+  </div>
+
+  <div id="gemini-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999;">
+    <div id="gemini-modal-card" class="card" style="position:absolute; right:1rem; top:1rem; bottom:1rem; width:min(720px, calc(100vw - 2rem)); overflow:auto;">
+      <div class="card-header">
+        <div>
+          <p class="label">Gemini Insights</p>
+          <p class="muted" id="gemini-meta">—</p>
+        </div>
+        <div class="panel-actions">
+          <button id="gemini-close" type="button">Close</button>
+        </div>
+      </div>
+      <div id="gemini-body">Select an event and click Analyze.</div>
+    </div>
+  </div>
+
+  <div id="config-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999;">
+    <div class="card" style="position:absolute; left:50%; top:50%; transform:translate(-50%, -50%); width:min(720px, calc(100vw - 2rem)); max-height: calc(100vh - 2rem); overflow:auto;">
+      <div class="card-header">
+        <div>
+          <p class="label">Edit Policies</p>
+          <p class="muted">Updates are not persisted in this demo build.</p>
+        </div>
+        <div class="panel-actions">
+          <button id="config-modal-close" type="button">Close</button>
+        </div>
+      </div>
+      <div>
+        <div class="pill" style="width:100%; border-radius:0.75rem; padding:0.75rem;">
+          <div class="muted">This modal is a UI mockup. To make edits enforceable, wire an admin API to update `PREFERRED_CRYPTO`, `PROXY_RATE_LIMIT`, and `PROXY_WHITELIST` for the proxy process.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='app.js', v='2') }}"></script>
+</body>
+</html>
+

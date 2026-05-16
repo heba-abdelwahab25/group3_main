@@ -1,0 +1,17 @@
+# Post-Quantum Cryptography
+# Primary: kyber-py (ML_KEM_512)
+kyber-py>=0.1.0
+# Alternative: pqcrypto (fallback)
+pqcrypto>=0.1.0
+
+# Classical Cryptography (RSA)
+pycryptodome>=3.19.0
+
+# Secret management backends
+hvac>=2.1.0
+requests>=2.32.0
+dpkt>=1.9.8
+
+# Optional: For better performance
+# cryptography>=41.0.0
+

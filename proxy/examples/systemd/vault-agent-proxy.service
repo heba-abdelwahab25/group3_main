@@ -1,0 +1,18 @@
+[Unit]
+Description=Vault Agent for proxy certificates
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=root
+Group=proxy-user
+ExecStart=/usr/bin/vault agent -config=/etc/vault/vault-agent-proxy.hcl
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RuntimeDirectory=vault-agent-proxy
+RuntimeDirectoryMode=0750
+
+[Install]
+WantedBy=multi-user.target
+
+

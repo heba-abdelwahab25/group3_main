@@ -1,0 +1,28 @@
+# Secrets / env
+.env
+**/.env
+
+# Python
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.pyd
+
+# Virtual envs
+venv/
+.venv/
+**/venv/
+
+# Local databases / instance
+*.db
+server/instance/
+observer/instance/
+
+# Logs / captures
+logs/
+proxy/logs/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/

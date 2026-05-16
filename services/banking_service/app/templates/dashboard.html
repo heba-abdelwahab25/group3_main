@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — SecureBank PQC{% endblock %}
+{% block content %}
+<h4 class="mb-4">My Accounts <span class="badge badge-pqc bg-primary">PQC Protected</span></h4>
+<div class="row g-3">
+  {% for acc in accounts %}
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title">{{ acc.label }}</h5>
+        <p class="display-6 text-success">${{ "%.2f"|format(acc.balance / 100) }}</p>
+        <a href="{{ url_for('main.account_detail', account_id=acc.id) }}" class="btn btn-sm btn-outline-primary">View Transactions</a>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <p class="text-muted">No accounts found.</p>
+  {% endfor %}
+</div>
+
+<div class="mt-4">
+  <a href="{{ url_for('main.transfer') }}" class="btn btn-primary">💸 Make Transfer</a>
+</div>
+
+<div class="card mt-4">
+  <div class="card-body">
+    <h6 class="card-title">🔒 Encryption Status</h6>
+    <p class="mb-1">Algorithm: <span class="crypto-badge">Kyber-ML_KEM_768 + AES-256-GCM</span></p>
+    <p class="mb-1">Key Exchange: <span class="crypto-badge">CRYSTALS-Kyber (NIST PQC Round 3)</span></p>
+    <p class="mb-0">Signature: <span class="crypto-badge">CRYSTALS-Dilithium (ML-DSA)</span></p>
+  </div>
+</div>
+{% endblock %}
